@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>wav2vec2.0论文笔记 | Hexo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="本文目录结构如下    论文资料 1 Introduction 2 Model Feature encoder. Contextualized representations with Transformers. Quantization module.   3 Training 3.1 Masking 3.2 Objective Contrastive Loss. Diversity Loss.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="wav2vec2.0论文笔记">
+<meta property="og:url" content="https://xf4fresh.github.io/project/2023/06/21/wav2vec2-0%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="本文目录结构如下    论文资料 1 Introduction 2 Model Feature encoder. Contextualized representations with Transformers. Quantization module.   3 Training 3.1 Masking 3.2 Objective Contrastive Loss. Diversity Loss.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://intranetproxy.alipay.com/skylark/lark/0/2021/png/145266/1627445397898-899f3fe0-2845-47ca-a063-5f3620923f3c.png#clientId=u6b7ec6f2-5df5-4&from=paste&height=395&id=u6bc38eda&originHeight=790&originWidth=1894&originalType=binary&ratio=1&rotation=0&showTitle=false&size=435768&status=done&style=none&taskId=u40782ed7-f5e0-4c1a-8f55-8ee5ac6b1a4&title=&width=947">
+<meta property="og:image" content="https://intranetproxy.alipay.com/skylark/lark/0/2021/png/145266/1627445955370-030ad995-e498-4b33-a7f3-ca2aa82d0002.png#clientId=u98c0adcd-7bd3-4&from=paste&height=85&id=u8ad68b9f&originHeight=170&originWidth=818&originalType=binary&ratio=1&rotation=0&showTitle=false&size=42391&status=done&style=none&taskId=u62e87afb-2c89-459b-933c-832bc76b9f8&title=&width=409">
+<meta property="og:image" content="https://intranetproxy.alipay.com/skylark/lark/0/2021/png/145266/1627445992033-79fdb857-bc19-46eb-9731-d3a9b70e9b33.png#clientId=u98c0adcd-7bd3-4&from=paste&height=96&id=u39f1d515&originHeight=192&originWidth=1012&originalType=binary&ratio=1&rotation=0&showTitle=false&size=45262&status=done&style=none&taskId=uaf344054-e258-42ee-b89d-0bbe32a773c&title=&width=506">
+<meta property="og:image" content="https://intranetproxy.alipay.com/skylark/lark/0/2021/png/145266/1627445345076-095f953c-2e1e-4a52-bda0-86fc84ced5b2.png#clientId=u6b7ec6f2-5df5-4&from=paste&height=205&id=u86f9ca95&originHeight=410&originWidth=1886&originalType=binary&ratio=1&rotation=0&showTitle=false&size=306933&status=done&style=none&taskId=u400ce3c4-4323-4aea-a715-f38404c68d5&title=&width=943">
+<meta property="og:image" content="https://intranetproxy.alipay.com/skylark/lark/0/2021/png/145266/1627445370683-7e8d9af2-342c-466b-ad7c-e97766dd173d.png#clientId=u6b7ec6f2-5df5-4&from=paste&height=554&id=ua733b317&originHeight=1108&originWidth=1880&originalType=binary&ratio=1&rotation=0&showTitle=false&size=541996&status=done&style=none&taskId=u9c2019dc-2cc0-4553-9a63-ca62a19425a&title=&width=940">
+<meta property="og:image" content="https://intranetproxy.alipay.com/skylark/lark/0/2021/png/145266/1627445318211-2b03dcb7-81ea-438f-9073-9e89e7802d68.png#clientId=u6b7ec6f2-5df5-4&from=paste&height=555&id=u3b76058b&originHeight=1110&originWidth=1862&originalType=binary&ratio=1&rotation=0&showTitle=false&size=554642&status=done&style=none&taskId=u9036c741-7d3e-4060-910c-dab8a2cb784&title=&width=931">
+<meta property="og:image" content="https://intranetproxy.alipay.com/skylark/lark/0/2021/png/145266/1627445296103-85b30b00-92b8-4c42-9e6c-d1274a2cdb8d.png#clientId=u6b7ec6f2-5df5-4&from=paste&height=219&id=ubddca1f2&originHeight=438&originWidth=1900&originalType=binary&ratio=1&rotation=0&showTitle=false&size=246977&status=done&style=none&taskId=ud6963092-da6c-4cd4-80db-ccba07db787&title=&width=950">
+<meta property="article:published_time" content="2023-06-21T05:59:11.000Z">
+<meta property="article:modified_time" content="2023-06-21T06:09:46.361Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="语音识别">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://intranetproxy.alipay.com/skylark/lark/0/2021/png/145266/1627445397898-899f3fe0-2845-47ca-a063-5f3620923f3c.png#clientId=u6b7ec6f2-5df5-4&from=paste&height=395&id=u6bc38eda&originHeight=790&originWidth=1894&originalType=binary&ratio=1&rotation=0&showTitle=false&size=435768&status=done&style=none&taskId=u40782ed7-f5e0-4c1a-8f55-8ee5ac6b1a4&title=&width=947">
+  
+    <link rel="alternate" href="/project/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/project/favicon.png">
+  
+  
+    
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/typeface-source-code-pro@0.0.71/index.min.css">
+
+  
+  
+<link rel="stylesheet" href="/project/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/project/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<meta name="generator" content="Hexo 6.3.0"><style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/project/" id="logo">Hexo</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"><span class="fa fa-bars"></span></a>
+        
+          <a class="main-nav-link" href="/project/">Home</a>
+        
+          <a class="main-nav-link" href="/project/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+        
+          <a class="nav-icon" href="/project/atom.xml" title="RSS Feed"><span class="fa fa-rss"></span></a>
+        
+        <a class="nav-icon nav-search-btn" title="Search"><span class="fa fa-search"></span></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="https://xf4fresh.github.io/project"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-wav2vec2-0论文笔记" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/project/2023/06/21/wav2vec2-0%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/" class="article-date">
+  <time class="dt-published" datetime="2023-06-21T05:59:11.000Z" itemprop="datePublished">2023-06-21</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      wav2vec2.0论文笔记
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>本文目录结构如下</p>
+<!-- toc -->
+
+<ul>
+<li><a href="#%E8%AE%BA%E6%96%87%E8%B5%84%E6%96%99">论文资料</a></li>
+<li><a href="#1-introduction">1 Introduction</a></li>
+<li><a href="#2-model">2 Model</a><ul>
+<li><a href="#feature-encoder">Feature encoder.</a></li>
+<li><a href="#contextualized-representations-with-transformers">Contextualized representations with Transformers.</a></li>
+<li><a href="#quantization-module">Quantization module.</a></li>
+</ul>
+</li>
+<li><a href="#3-training">3 Training</a><ul>
+<li><a href="#31-masking">3.1 Masking</a></li>
+<li><a href="#32-objective">3.2 Objective</a><ul>
+<li><a href="#contrastive-loss">Contrastive Loss.</a></li>
+<li><a href="#diversity-loss">Diversity Loss.</a></li>
+</ul>
+</li>
+<li><a href="#33-fine-tuning">3.3 Fine-tuning</a></li>
+</ul>
+</li>
+<li><a href="#4-experimental-setup">4 Experimental Setup</a><ul>
+<li><a href="#41-datasets">4.1 Datasets</a></li>
+<li><a href="#44-language-models-and-decoding">4.4 Language Models and Decoding</a></li>
+</ul>
+</li>
+<li><a href="#5-results">5 Results</a><ul>
+<li><a href="#51-low-resource-labeled-data-evaluation">5.1 Low-Resource Labeled Data Evaluation</a></li>
+<li><a href="#52-high-resource-labeled-data-evaluation-on-librispeech">5.2 High-Resource Labeled Data Evaluation on Librispeech</a></li>
+<li><a href="#54-ablations">5.4 Ablations</a></li>
+</ul>
+</li>
+</ul>
+<!-- tocstop -->
+
+<h2><span id="论文资料">论文资料</span></h2><ul>
+<li><p>论文地址<br><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2006.11477">wav2vec 2.0: A Framework for Self-Supervised Learning of Speech Representations</a></p>
+</li>
+<li><p>开源实现<br><a target="_blank" rel="noopener" href="https://github.com/pytorch/fairseq/tree/main/examples/wav2vec#wav2vec-20">https://github.com/pytorch/fairseq/tree/main/examples/wav2vec#wav2vec-20</a></p>
+</li>
+<li><p>开源模型<br><a target="_blank" rel="noopener" href="https://huggingface.co/facebook/wav2vec2-base-960h">https://huggingface.co/facebook/wav2vec2-base-960h</a></p>
+</li>
+</ul>
+<h2><span id="1-introduction">1 Introduction</span></h2><p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2021/png/145266/1627445397898-899f3fe0-2845-47ca-a063-5f3620923f3c.png#clientId=u6b7ec6f2-5df5-4&from=paste&height=395&id=u6bc38eda&originHeight=790&originWidth=1894&originalType=binary&ratio=1&rotation=0&showTitle=false&size=435768&status=done&style=none&taskId=u40782ed7-f5e0-4c1a-8f55-8ee5ac6b1a4&title=&width=947" alt="image.png"></p>
+<h2><span id="2-model">2 Model</span></h2><h3><span id="feature-encoder">Feature encoder.</span></h3><p>The raw waveform input to the encoder is normalized to zero mean and unit variance.</p>
+<h3><span id="contextualized-representations-with-transformers">Contextualized representations with Transformers.</span></h3><p>Instead of fixed positional embeddings which encode absolute positional information, we use a convolutional layer similar to [37, 4, 57] which acts as relative positional embedding.</p>
+<h3><span id="quantization-module">Quantization module.</span></h3><p>For self-supervised training we discretize the output of the feature encoder z to a finite set of speech representations via <strong>product quantization</strong> [25]. This choice led to good results in prior work which learned discrete units in a first step followed by learning contextualized representations [5].</p>
+<p>The <strong>Gumbel softmax</strong> enables choosing discrete codebook entries in a fully differentiable way [16, 24, 35]. We use the straight-through estimator [26] and setup G hard Gumbel softmax operations [24].</p>
+<h2><span id="3-training">3 Training</span></h2><h3><span id="31-masking">3.1 Masking</span></h3><h3><span id="32-objective">3.2 Objective</span></h3><p>During pre-training, we learn representations of speech audio by solving a contrastive task <mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.357ex;" xmlns="http://www.w3.org/2000/svg" width="3.133ex" height="1.902ex" role="img" focusable="false" viewbox="0 -683 1384.8 840.8"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="msub"><g data-mml-node="mi"><path data-c="1D43F" d="M228 637Q194 637 192 641Q191 643 191 649Q191 673 202 682Q204 683 217 683Q271 680 344 680Q485 680 506 683H518Q524 677 524 674T522 656Q517 641 513 637H475Q406 636 394 628Q387 624 380 600T313 336Q297 271 279 198T252 88L243 52Q243 48 252 48T311 46H328Q360 46 379 47T428 54T478 72T522 106T564 161Q580 191 594 228T611 270Q616 273 628 273H641Q647 264 647 262T627 203T583 83T557 9Q555 4 553 3T537 0T494 -1Q483 -1 418 -1T294 0H116Q32 0 32 10Q32 17 34 24Q39 43 44 45Q48 46 59 46H65Q92 46 125 49Q139 52 144 61Q147 65 216 339T285 628Q285 635 228 637Z"/></g><g data-mml-node="mi" transform="translate(714,-150) scale(0.707)"><path data-c="1D45A" d="M21 287Q22 293 24 303T36 341T56 388T88 425T132 442T175 435T205 417T221 395T229 376L231 369Q231 367 232 367L243 378Q303 442 384 442Q401 442 415 440T441 433T460 423T475 411T485 398T493 385T497 373T500 364T502 357L510 367Q573 442 659 442Q713 442 746 415T780 336Q780 285 742 178T704 50Q705 36 709 31T724 26Q752 26 776 56T815 138Q818 149 821 151T837 153Q857 153 857 145Q857 144 853 130Q845 101 831 73T785 17T716 -10Q669 -10 648 17T627 73Q627 92 663 193T700 345Q700 404 656 404H651Q565 404 506 303L499 291L466 157Q433 26 428 16Q415 -11 385 -11Q372 -11 364 -4T353 8T350 18Q350 29 384 161L420 307Q423 322 423 345Q423 404 379 404H374Q288 404 229 303L222 291L189 157Q156 26 151 16Q138 -11 108 -11Q95 -11 87 -5T76 7T74 17Q74 30 112 181Q151 335 151 342Q154 357 154 369Q154 405 129 405Q107 405 92 377T69 316T57 280Q55 278 41 278H27Q21 284 21 287Z"/></g></g></g></g></svg></mjx-container> which requires to identify the true quantized latent speech representation for a masked time step within a set of distractors. This is augmented by a codebook diversity loss <mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.355ex;" xmlns="http://www.w3.org/2000/svg" width="2.56ex" height="1.901ex" role="img" focusable="false" viewbox="0 -683 1131.7 840.1"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="msub"><g data-mml-node="mi"><path data-c="1D43F" d="M228 637Q194 637 192 641Q191 643 191 649Q191 673 202 682Q204 683 217 683Q271 680 344 680Q485 680 506 683H518Q524 677 524 674T522 656Q517 641 513 637H475Q406 636 394 628Q387 624 380 600T313 336Q297 271 279 198T252 88L243 52Q243 48 252 48T311 46H328Q360 46 379 47T428 54T478 72T522 106T564 161Q580 191 594 228T611 270Q616 273 628 273H641Q647 264 647 262T627 203T583 83T557 9Q555 4 553 3T537 0T494 -1Q483 -1 418 -1T294 0H116Q32 0 32 10Q32 17 34 24Q39 43 44 45Q48 46 59 46H65Q92 46 125 49Q139 52 144 61Q147 65 216 339T285 628Q285 635 228 637Z"/></g><g data-mml-node="mi" transform="translate(714,-150) scale(0.707)"><path data-c="1D451" d="M366 683Q367 683 438 688T511 694Q523 694 523 686Q523 679 450 384T375 83T374 68Q374 26 402 26Q411 27 422 35Q443 55 463 131Q469 151 473 152Q475 153 483 153H487H491Q506 153 506 145Q506 140 503 129Q490 79 473 48T445 8T417 -8Q409 -10 393 -10Q359 -10 336 5T306 36L300 51Q299 52 296 50Q294 48 292 46Q233 -10 172 -10Q117 -10 75 30T33 157Q33 205 53 255T101 341Q148 398 195 420T280 442Q336 442 364 400Q369 394 369 396Q370 400 396 505T424 616Q424 629 417 632T378 637H357Q351 643 351 645T353 664Q358 683 366 683ZM352 326Q329 405 277 405Q242 405 210 374T160 293Q131 214 119 129Q119 126 119 118T118 106Q118 61 136 44T179 26Q233 26 290 98L298 109L352 326Z"/></g></g></g></g></svg></mjx-container> to encourage the model to use the codebook entries equally often.<br><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.357ex;" xmlns="http://www.w3.org/2000/svg" width="14.465ex" height="1.902ex" role="img" focusable="false" viewbox="0 -683 6393.5 840.8"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mi"><path data-c="1D43F" d="M228 637Q194 637 192 641Q191 643 191 649Q191 673 202 682Q204 683 217 683Q271 680 344 680Q485 680 506 683H518Q524 677 524 674T522 656Q517 641 513 637H475Q406 636 394 628Q387 624 380 600T313 336Q297 271 279 198T252 88L243 52Q243 48 252 48T311 46H328Q360 46 379 47T428 54T478 72T522 106T564 161Q580 191 594 228T611 270Q616 273 628 273H641Q647 264 647 262T627 203T583 83T557 9Q555 4 553 3T537 0T494 -1Q483 -1 418 -1T294 0H116Q32 0 32 10Q32 17 34 24Q39 43 44 45Q48 46 59 46H65Q92 46 125 49Q139 52 144 61Q147 65 216 339T285 628Q285 635 228 637Z"/></g><g data-mml-node="mo" transform="translate(958.8,0)"><path data-c="3D" d="M56 347Q56 360 70 367H707Q722 359 722 347Q722 336 708 328L390 327H72Q56 332 56 347ZM56 153Q56 168 72 173H708Q722 163 722 153Q722 140 707 133H70Q56 140 56 153Z"/></g><g data-mml-node="msub" transform="translate(2014.6,0)"><g data-mml-node="mi"><path data-c="1D43F" d="M228 637Q194 637 192 641Q191 643 191 649Q191 673 202 682Q204 683 217 683Q271 680 344 680Q485 680 506 683H518Q524 677 524 674T522 656Q517 641 513 637H475Q406 636 394 628Q387 624 380 600T313 336Q297 271 279 198T252 88L243 52Q243 48 252 48T311 46H328Q360 46 379 47T428 54T478 72T522 106T564 161Q580 191 594 228T611 270Q616 273 628 273H641Q647 264 647 262T627 203T583 83T557 9Q555 4 553 3T537 0T494 -1Q483 -1 418 -1T294 0H116Q32 0 32 10Q32 17 34 24Q39 43 44 45Q48 46 59 46H65Q92 46 125 49Q139 52 144 61Q147 65 216 339T285 628Q285 635 228 637Z"/></g><g data-mml-node="mi" transform="translate(714,-150) scale(0.707)"><path data-c="1D45A" d="M21 287Q22 293 24 303T36 341T56 388T88 425T132 442T175 435T205 417T221 395T229 376L231 369Q231 367 232 367L243 378Q303 442 384 442Q401 442 415 440T441 433T460 423T475 411T485 398T493 385T497 373T500 364T502 357L510 367Q573 442 659 442Q713 442 746 415T780 336Q780 285 742 178T704 50Q705 36 709 31T724 26Q752 26 776 56T815 138Q818 149 821 151T837 153Q857 153 857 145Q857 144 853 130Q845 101 831 73T785 17T716 -10Q669 -10 648 17T627 73Q627 92 663 193T700 345Q700 404 656 404H651Q565 404 506 303L499 291L466 157Q433 26 428 16Q415 -11 385 -11Q372 -11 364 -4T353 8T350 18Q350 29 384 161L420 307Q423 322 423 345Q423 404 379 404H374Q288 404 229 303L222 291L189 157Q156 26 151 16Q138 -11 108 -11Q95 -11 87 -5T76 7T74 17Q74 30 112 181Q151 335 151 342Q154 357 154 369Q154 405 129 405Q107 405 92 377T69 316T57 280Q55 278 41 278H27Q21 284 21 287Z"/></g></g><g data-mml-node="mo" transform="translate(3621.6,0)"><path data-c="2B" d="M56 237T56 250T70 270H369V420L370 570Q380 583 389 583Q402 583 409 568V270H707Q722 262 722 250T707 230H409V-68Q401 -82 391 -82H389H387Q375 -82 369 -68V230H70Q56 237 56 250Z"/></g><g data-mml-node="mi" transform="translate(4621.8,0)"><path data-c="1D6FC" d="M34 156Q34 270 120 356T309 442Q379 442 421 402T478 304Q484 275 485 237V208Q534 282 560 374Q564 388 566 390T582 393Q603 393 603 385Q603 376 594 346T558 261T497 161L486 147L487 123Q489 67 495 47T514 26Q528 28 540 37T557 60Q559 67 562 68T577 70Q597 70 597 62Q597 56 591 43Q579 19 556 5T512 -10H505Q438 -10 414 62L411 69L400 61Q390 53 370 41T325 18T267 -2T203 -11Q124 -11 79 39T34 156ZM208 26Q257 26 306 47T379 90L403 112Q401 255 396 290Q382 405 304 405Q235 405 183 332Q156 292 139 224T121 120Q121 71 146 49T208 26Z"/></g><g data-mml-node="msub" transform="translate(5261.8,0)"><g data-mml-node="mi"><path data-c="1D43F" d="M228 637Q194 637 192 641Q191 643 191 649Q191 673 202 682Q204 683 217 683Q271 680 344 680Q485 680 506 683H518Q524 677 524 674T522 656Q517 641 513 637H475Q406 636 394 628Q387 624 380 600T313 336Q297 271 279 198T252 88L243 52Q243 48 252 48T311 46H328Q360 46 379 47T428 54T478 72T522 106T564 161Q580 191 594 228T611 270Q616 273 628 273H641Q647 264 647 262T627 203T583 83T557 9Q555 4 553 3T537 0T494 -1Q483 -1 418 -1T294 0H116Q32 0 32 10Q32 17 34 24Q39 43 44 45Q48 46 59 46H65Q92 46 125 49Q139 52 144 61Q147 65 216 339T285 628Q285 635 228 637Z"/></g><g data-mml-node="mi" transform="translate(714,-150) scale(0.707)"><path data-c="1D451" d="M366 683Q367 683 438 688T511 694Q523 694 523 686Q523 679 450 384T375 83T374 68Q374 26 402 26Q411 27 422 35Q443 55 463 131Q469 151 473 152Q475 153 483 153H487H491Q506 153 506 145Q506 140 503 129Q490 79 473 48T445 8T417 -8Q409 -10 393 -10Q359 -10 336 5T306 36L300 51Q299 52 296 50Q294 48 292 46Q233 -10 172 -10Q117 -10 75 30T33 157Q33 205 53 255T101 341Q148 398 195 420T280 442Q336 442 364 400Q369 394 369 396Q370 400 396 505T424 616Q424 629 417 632T378 637H357Q351 643 351 645T353 664Q358 683 366 683ZM352 326Q329 405 277 405Q242 405 210 374T160 293Q131 214 119 129Q119 126 119 118T118 106Q118 61 136 44T179 26Q233 26 290 98L298 109L352 326Z"/></g></g></g></g></svg></mjx-container></p>
+<h4><span id="contrastive-loss">Contrastive Loss.</span></h4><p>Given context network output ct centered over masked time step t, the model needs to identify the true quantized latent speech representation <mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.439ex;" xmlns="http://www.w3.org/2000/svg" width="1.774ex" height="1.439ex" role="img" focusable="false" viewbox="0 -442 784.3 636"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="msub"><g data-mml-node="mi"><path data-c="1D45E" d="M33 157Q33 258 109 349T280 441Q340 441 372 389Q373 390 377 395T388 406T404 418Q438 442 450 442Q454 442 457 439T460 434Q460 425 391 149Q320 -135 320 -139Q320 -147 365 -148H390Q396 -156 396 -157T393 -175Q389 -188 383 -194H370Q339 -192 262 -192Q234 -192 211 -192T174 -192T157 -193Q143 -193 143 -185Q143 -182 145 -170Q149 -154 152 -151T172 -148Q220 -148 230 -141Q238 -136 258 -53T279 32Q279 33 272 29Q224 -10 172 -10Q117 -10 75 30T33 157ZM352 326Q329 405 277 405Q242 405 210 374T160 293Q131 214 119 129Q119 126 119 118T118 106Q118 61 136 44T179 26Q233 26 290 98L298 109L352 326Z"/></g><g data-mml-node="mi" transform="translate(479,-150) scale(0.707)"><path data-c="1D461" d="M26 385Q19 392 19 395Q19 399 22 411T27 425Q29 430 36 430T87 431H140L159 511Q162 522 166 540T173 566T179 586T187 603T197 615T211 624T229 626Q247 625 254 615T261 596Q261 589 252 549T232 470L222 433Q222 431 272 431H323Q330 424 330 420Q330 398 317 385H210L174 240Q135 80 135 68Q135 26 162 26Q197 26 230 60T283 144Q285 150 288 151T303 153H307Q322 153 322 145Q322 142 319 133Q314 117 301 95T267 48T216 6T155 -11Q125 -11 98 4T59 56Q57 64 57 83V101L92 241Q127 382 128 383Q128 385 77 385H26Z"/></g></g></g></g></svg></mjx-container> in a set of K + 1 quantized candidate representations<mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.439ex;" xmlns="http://www.w3.org/2000/svg" width="6.362ex" height="2.136ex" role="img" focusable="false" viewbox="0 -750 2811.8 944"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="TeXAtom" data-mjx-texclass="ORD"><g data-mml-node="mover"><g data-mml-node="mi"><path data-c="1D45E" d="M33 157Q33 258 109 349T280 441Q340 441 372 389Q373 390 377 395T388 406T404 418Q438 442 450 442Q454 442 457 439T460 434Q460 425 391 149Q320 -135 320 -139Q320 -147 365 -148H390Q396 -156 396 -157T393 -175Q389 -188 383 -194H370Q339 -192 262 -192Q234 -192 211 -192T174 -192T157 -193Q143 -193 143 -185Q143 -182 145 -170Q149 -154 152 -151T172 -148Q220 -148 230 -141Q238 -136 258 -53T279 32Q279 33 272 29Q224 -10 172 -10Q117 -10 75 30T33 157ZM352 326Q329 405 277 405Q242 405 210 374T160 293Q131 214 119 129Q119 126 119 118T118 106Q118 61 136 44T179 26Q233 26 290 98L298 109L352 326Z"/></g><g data-mml-node="mo" transform="translate(316.8,332) translate(-250 0)"><path data-c="7E" d="M179 251Q164 251 151 245T131 234T111 215L97 227L83 238Q83 239 95 253T121 283T142 304Q165 318 187 318T253 300T320 282Q335 282 348 288T368 299T388 318L402 306L416 295Q375 236 344 222Q330 215 313 215Q292 215 248 233T179 251Z"/></g></g></g><g data-mml-node="mo" transform="translate(737.8,0)"><path data-c="2208" d="M84 250Q84 372 166 450T360 539Q361 539 377 539T419 540T469 540H568Q583 532 583 520Q583 511 570 501L466 500Q355 499 329 494Q280 482 242 458T183 409T147 354T129 306T124 272V270H568Q583 262 583 250T568 230H124V228Q124 207 134 177T167 112T231 48T328 7Q355 1 466 0H570Q583 -10 583 -20Q583 -32 568 -40H471Q464 -40 446 -40T417 -41Q262 -41 172 45Q84 127 84 250Z"/></g><g data-mml-node="msub" transform="translate(1682.6,0)"><g data-mml-node="mi"><path data-c="1D444" d="M399 -80Q399 -47 400 -30T402 -11V-7L387 -11Q341 -22 303 -22Q208 -22 138 35T51 201Q50 209 50 244Q50 346 98 438T227 601Q351 704 476 704Q514 704 524 703Q621 689 680 617T740 435Q740 255 592 107Q529 47 461 16L444 8V3Q444 2 449 -24T470 -66T516 -82Q551 -82 583 -60T625 -3Q631 11 638 11Q647 11 649 2Q649 -6 639 -34T611 -100T557 -165T481 -194Q399 -194 399 -87V-80ZM636 468Q636 523 621 564T580 625T530 655T477 665Q429 665 379 640Q277 591 215 464T153 216Q153 110 207 59Q231 38 236 38V46Q236 86 269 120T347 155Q372 155 390 144T417 114T429 82T435 55L448 64Q512 108 557 185T619 334T636 468ZM314 18Q362 18 404 39L403 49Q399 104 366 115Q354 117 347 117Q344 117 341 117T337 118Q317 118 296 98T274 52Q274 18 314 18Z"/></g><g data-mml-node="mi" transform="translate(824,-150) scale(0.707)"><path data-c="1D461" d="M26 385Q19 392 19 395Q19 399 22 411T27 425Q29 430 36 430T87 431H140L159 511Q162 522 166 540T173 566T179 586T187 603T197 615T211 624T229 626Q247 625 254 615T261 596Q261 589 252 549T232 470L222 433Q222 431 272 431H323Q330 424 330 420Q330 398 317 385H210L174 240Q135 80 135 68Q135 26 162 26Q197 26 230 60T283 144Q285 150 288 151T303 153H307Q322 153 322 145Q322 142 319 133Q314 117 301 95T267 48T216 6T155 -11Q125 -11 98 4T59 56Q57 64 57 83V101L92 241Q127 382 128 383Q128 385 77 385H26Z"/></g></g></g></g></svg></mjx-container> which includes <mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.439ex;" xmlns="http://www.w3.org/2000/svg" width="1.774ex" height="1.439ex" role="img" focusable="false" viewbox="0 -442 784.3 636"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="msub"><g data-mml-node="mi"><path data-c="1D45E" d="M33 157Q33 258 109 349T280 441Q340 441 372 389Q373 390 377 395T388 406T404 418Q438 442 450 442Q454 442 457 439T460 434Q460 425 391 149Q320 -135 320 -139Q320 -147 365 -148H390Q396 -156 396 -157T393 -175Q389 -188 383 -194H370Q339 -192 262 -192Q234 -192 211 -192T174 -192T157 -193Q143 -193 143 -185Q143 -182 145 -170Q149 -154 152 -151T172 -148Q220 -148 230 -141Q238 -136 258 -53T279 32Q279 33 272 29Q224 -10 172 -10Q117 -10 75 30T33 157ZM352 326Q329 405 277 405Q242 405 210 374T160 293Q131 214 119 129Q119 126 119 118T118 106Q118 61 136 44T179 26Q233 26 290 98L298 109L352 326Z"/></g><g data-mml-node="mi" transform="translate(479,-150) scale(0.707)"><path data-c="1D461" d="M26 385Q19 392 19 395Q19 399 22 411T27 425Q29 430 36 430T87 431H140L159 511Q162 522 166 540T173 566T179 586T187 603T197 615T211 624T229 626Q247 625 254 615T261 596Q261 589 252 549T232 470L222 433Q222 431 272 431H323Q330 424 330 420Q330 398 317 385H210L174 240Q135 80 135 68Q135 26 162 26Q197 26 230 60T283 144Q285 150 288 151T303 153H307Q322 153 322 145Q322 142 319 133Q314 117 301 95T267 48T216 6T155 -11Q125 -11 98 4T59 56Q57 64 57 83V101L92 241Q127 382 128 383Q128 385 77 385H26Z"/></g></g></g></g></svg></mjx-container> and K distractors [23, 54]. Distractors are uniformly sampled from other masked time steps of the same utterance. The loss is defined as<br><img src="https://intranetproxy.alipay.com/skylark/lark/0/2021/png/145266/1627445955370-030ad995-e498-4b33-a7f3-ca2aa82d0002.png#clientId=u98c0adcd-7bd3-4&from=paste&height=85&id=u8ad68b9f&originHeight=170&originWidth=818&originalType=binary&ratio=1&rotation=0&showTitle=false&size=42391&status=done&style=none&taskId=u62e87afb-2c89-459b-933c-832bc76b9f8&title=&width=409" alt="image.png"><br>where we compute the cosine similarity sim(a, b)</p>
+<h4><span id="diversity-loss">Diversity Loss.</span></h4><p>the diversity loss <mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.355ex;" xmlns="http://www.w3.org/2000/svg" width="2.56ex" height="1.901ex" role="img" focusable="false" viewbox="0 -683 1131.7 840.1"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="msub"><g data-mml-node="mi"><path data-c="1D43F" d="M228 637Q194 637 192 641Q191 643 191 649Q191 673 202 682Q204 683 217 683Q271 680 344 680Q485 680 506 683H518Q524 677 524 674T522 656Q517 641 513 637H475Q406 636 394 628Q387 624 380 600T313 336Q297 271 279 198T252 88L243 52Q243 48 252 48T311 46H328Q360 46 379 47T428 54T478 72T522 106T564 161Q580 191 594 228T611 270Q616 273 628 273H641Q647 264 647 262T627 203T583 83T557 9Q555 4 553 3T537 0T494 -1Q483 -1 418 -1T294 0H116Q32 0 32 10Q32 17 34 24Q39 43 44 45Q48 46 59 46H65Q92 46 125 49Q139 52 144 61Q147 65 216 339T285 628Q285 635 228 637Z"/></g><g data-mml-node="mi" transform="translate(714,-150) scale(0.707)"><path data-c="1D451" d="M366 683Q367 683 438 688T511 694Q523 694 523 686Q523 679 450 384T375 83T374 68Q374 26 402 26Q411 27 422 35Q443 55 463 131Q469 151 473 152Q475 153 483 153H487H491Q506 153 506 145Q506 140 503 129Q490 79 473 48T445 8T417 -8Q409 -10 393 -10Q359 -10 336 5T306 36L300 51Q299 52 296 50Q294 48 292 46Q233 -10 172 -10Q117 -10 75 30T33 157Q33 205 53 255T101 341Q148 398 195 420T280 442Q336 442 364 400Q369 394 369 396Q370 400 396 505T424 616Q424 629 417 632T378 637H357Q351 643 351 645T353 664Q358 683 366 683ZM352 326Q329 405 277 405Q242 405 210 374T160 293Q131 214 119 129Q119 126 119 118T118 106Q118 61 136 44T179 26Q233 26 290 98L298 109L352 326Z"/></g></g></g></g></svg></mjx-container> is designed to increase the use of the quantized codebook representations [10]. We encourage the equal use of the V entries in each of the G codebooks by maximizing the entropy of the averaged softmax distribution l over the codebook entries for each 3 codebook <mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.847ex;" xmlns="http://www.w3.org/2000/svg" width="2.089ex" height="2.564ex" role="img" focusable="false" viewbox="0 -759 923.3 1133.3"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="msub"><g data-mml-node="mover"><g data-mml-node="mi"><path data-c="1D45D" d="M23 287Q24 290 25 295T30 317T40 348T55 381T75 411T101 433T134 442Q209 442 230 378L240 387Q302 442 358 442Q423 442 460 395T497 281Q497 173 421 82T249 -10Q227 -10 210 -4Q199 1 187 11T168 28L161 36Q160 35 139 -51T118 -138Q118 -144 126 -145T163 -148H188Q194 -155 194 -157T191 -175Q188 -187 185 -190T172 -194Q170 -194 161 -194T127 -193T65 -192Q-5 -192 -24 -194H-32Q-39 -187 -39 -183Q-37 -156 -26 -148H-6Q28 -147 33 -136Q36 -130 94 103T155 350Q156 355 156 364Q156 405 131 405Q109 405 94 377T71 316T59 280Q57 278 43 278H29Q23 284 23 287ZM178 102Q200 26 252 26Q282 26 310 49T356 107Q374 141 392 215T411 325V331Q411 405 350 405Q339 405 328 402T306 393T286 380T269 365T254 350T243 336T235 326L232 322Q232 321 229 308T218 264T204 212Q178 106 178 102Z"/></g><g data-mml-node="mo" transform="translate(1.5,374)"><path data-c="2013" d="M0 248V285H499V248H0Z"/></g></g><g data-mml-node="mi" transform="translate(536,-229.4) scale(0.707)"><path data-c="1D454" d="M311 43Q296 30 267 15T206 0Q143 0 105 45T66 160Q66 265 143 353T314 442Q361 442 401 394L404 398Q406 401 409 404T418 412T431 419T447 422Q461 422 470 413T480 394Q480 379 423 152T363 -80Q345 -134 286 -169T151 -205Q10 -205 10 -137Q10 -111 28 -91T74 -71Q89 -71 102 -80T116 -111Q116 -121 114 -130T107 -144T99 -154T92 -162L90 -164H91Q101 -167 151 -167Q189 -167 211 -155Q234 -144 254 -122T282 -75Q288 -56 298 -13Q311 35 311 43ZM384 328L380 339Q377 350 375 354T369 368T359 382T346 393T328 402T306 405Q262 405 221 352Q191 313 171 233T151 117Q151 38 213 38Q269 38 323 108L331 118L384 328Z"/></g></g></g></g></svg></mjx-container>across a batch of utterances;<br><img src="https://intranetproxy.alipay.com/skylark/lark/0/2021/png/145266/1627445992033-79fdb857-bc19-46eb-9731-d3a9b70e9b33.png#clientId=u98c0adcd-7bd3-4&from=paste&height=96&id=u39f1d515&originHeight=192&originWidth=1012&originalType=binary&ratio=1&rotation=0&showTitle=false&size=45262&status=done&style=none&taskId=uaf344054-e258-42ee-b89d-0bbe32a773c&title=&width=506" alt="image.png"></p>
+<h3><span id="33-fine-tuning">3.3 Fine-tuning</span></h3><p>Pre-trained models are fine-tuned for speech recognition by adding a randomly initialized linear projection on top of the context network into C classes representing the vocabulary of the task [4]. For Librispeech, we have 29 tokens for character targets plus a word boundary token. Models are optimized by minimizing a CTC loss [14] and we apply a modified version of SpecAugment [41] by masking to time-steps and channels during training which delays overfitting and significantly improves the final error rates, especially on the Libri-light subsets with few labeled examples.</p>
+<h2><span id="4-experimental-setup">4 Experimental Setup</span></h2><h3><span id="41-datasets">4.1 Datasets</span></h3><p>As unlabeled data we consider the Librispeech corpus [40] without transcriptions containing 960 hours of audio (<strong>LS-960</strong>) or the audio data from LibriVox (<strong>LV-60k</strong>). For the latter we follow the preprocessing of [27] resulting in 53.2k hours of audio. We fine-tune on five labeled data settings: 960 hours of transcribed Librispeech, the train-clean-100 subset comprising 100 hours (100 hours labeled), as well as the Libri-light limited resource training subsets originally extracted from Librispeech, these are train-10h (10 hours labeled), train-1h (1 hour labeled), train-10min (10 min labeled). We follow the evaluation protocol of Libri-light for these splits and evaluate on the standard Librispech dev-other/clean and test-clean/other sets.</p>
+<h3><span id="44-language-models-and-decoding">4.4 Language Models and Decoding</span></h3><p>We tune the weights of the language model (interval [0, 5]) and a word insertion penalty ([−5, 5]) via Bayesian optimization3 : we run 128 trials with beam 500 for the 4-gram LM and beam 50 for the Transformer LM and choose the best set of weights according to performance on dev-other. Test performance is measured with beam 1,500 for the n-gram LM and beam 500 for the Transformer LM. We use the beam search decoder of [44].</p>
+<h2><span id="5-results">5 Results</span></h2><h3><span id="51-low-resource-labeled-data-evaluation">5.1 Low-Resource Labeled Data Evaluation</span></h3><p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2021/png/145266/1627445345076-095f953c-2e1e-4a52-bda0-86fc84ced5b2.png#clientId=u6b7ec6f2-5df5-4&from=paste&height=205&id=u86f9ca95&originHeight=410&originWidth=1886&originalType=binary&ratio=1&rotation=0&showTitle=false&size=306933&status=done&style=none&taskId=u400ce3c4-4323-4aea-a715-f38404c68d5&title=&width=943" alt="image.png"><br><img src="https://intranetproxy.alipay.com/skylark/lark/0/2021/png/145266/1627445370683-7e8d9af2-342c-466b-ad7c-e97766dd173d.png#clientId=u6b7ec6f2-5df5-4&from=paste&height=554&id=ua733b317&originHeight=1108&originWidth=1880&originalType=binary&ratio=1&rotation=0&showTitle=false&size=541996&status=done&style=none&taskId=u9c2019dc-2cc0-4553-9a63-ca62a19425a&title=&width=940" alt="image.png"></p>
+<h3><span id="52-high-resource-labeled-data-evaluation-on-librispeech">5.2 High-Resource Labeled Data Evaluation on Librispeech</span></h3><p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2021/png/145266/1627445318211-2b03dcb7-81ea-438f-9073-9e89e7802d68.png#clientId=u6b7ec6f2-5df5-4&from=paste&height=555&id=u3b76058b&originHeight=1110&originWidth=1862&originalType=binary&ratio=1&rotation=0&showTitle=false&size=554642&status=done&style=none&taskId=u9036c741-7d3e-4060-910c-dab8a2cb784&title=&width=931" alt="image.png"></p>
+<h3><span id="54-ablations">5.4 Ablations</span></h3><p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2021/png/145266/1627445296103-85b30b00-92b8-4c42-9e6c-d1274a2cdb8d.png#clientId=u6b7ec6f2-5df5-4&from=paste&height=219&id=ubddca1f2&originHeight=438&originWidth=1900&originalType=binary&ratio=1&rotation=0&showTitle=false&size=246977&status=done&style=none&taskId=ud6963092-da6c-4cd4-80db-ccba07db787&title=&width=950" alt="image.png"><br>Table 4 shows that our strategy of continuous inputs with quantized targets (Baseline) performs best. Continuous latent speech representations retain more information to enable better context representations and quantizing the target representations leads to more robust training.</p>
+<p>Continuous targets reduce the effectiveness of self-supervised training since targets can capture detailed artifacts of the current sequence, e.g. speaker and background information, which make the task easier and prevent the model from learning general representations beneficial to speech recognition.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://xf4fresh.github.io/project/2023/06/21/wav2vec2-0%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/" data-id="clj5bfl340001s4jd9sbud4zf" data-title="wav2vec2.0论文笔记" class="article-share-link"><span class="fa fa-share">Share</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/project/tags/%E8%AF%AD%E9%9F%B3%E8%AF%86%E5%88%AB/" rel="tag">语音识别</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/project/2023/06/21/wav2vec%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">wav2vec论文笔记</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/project/tags/%E5%AF%B9%E8%AF%9D%E7%8A%B6%E6%80%81%E8%BF%BD%E8%B8%AA/" rel="tag">对话状态追踪</a></li><li class="tag-list-item"><a class="tag-list-link" href="/project/tags/%E5%AF%B9%E8%AF%9D%E7%B3%BB%E7%BB%9F/" rel="tag">对话系统</a></li><li class="tag-list-item"><a class="tag-list-link" href="/project/tags/%E8%AF%AD%E9%9F%B3%E8%AF%86%E5%88%AB/" rel="tag">语音识别</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/project/tags/%E5%AF%B9%E8%AF%9D%E7%8A%B6%E6%80%81%E8%BF%BD%E8%B8%AA/" style="font-size: 10px;">对话状态追踪</a> <a href="/project/tags/%E5%AF%B9%E8%AF%9D%E7%B3%BB%E7%BB%9F/" style="font-size: 10px;">对话系统</a> <a href="/project/tags/%E8%AF%AD%E9%9F%B3%E8%AF%86%E5%88%AB/" style="font-size: 20px;">语音识别</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/project/archives/2023/06/">June 2023</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/project/2023/06/21/wav2vec2-0%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">wav2vec2.0论文笔记</a>
+          </li>
+        
+          <li>
+            <a href="/project/2023/06/21/wav2vec%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">wav2vec论文笔记</a>
+          </li>
+        
+          <li>
+            <a href="/project/2023/06/14/%E3%80%8ATask-oriented-Dialogue-System-for-Automatic-Diagnosis%E3%80%8B%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">《Task-oriented Dialogue System for Automatic Diagnosis》论文笔记</a>
+          </li>
+        
+          <li>
+            <a href="/project/2023/06/14/%E3%80%8ADialogue-State-Tracking-with-a-Language-Model-using-Schema-Driven-Prompting%E3%80%8B%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/">《Dialogue State Tracking with a Language Model using Schema-Driven Prompting》论文笔记</a>
+          </li>
+        
+          <li>
+            <a href="/project/2023/06/14/hello-world/">Hello World</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2023 John Doe<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/project/" class="mobile-nav-link">Home</a>
+  
+    <a href="/project/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/project/js/jquery-3.6.4.min.js"></script>
+
+
+
+  
+<script src="/project/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/project/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>
